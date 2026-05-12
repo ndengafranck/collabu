@@ -34,6 +34,7 @@ export const createProject  = p     => fetch(`${BASE}/projects`,  { method:'POST
 export const updateProject  = (id,p)=> fetch(`${BASE}/projects/${id}`, { method:'PATCH', headers:hdrs(), body:JSON.stringify(p) }).then(ok)
 export const uploadCover    = (id,fd)=> fetch(`${BASE}/projects/${id}/cover`, { method:'POST', headers:hdrs(false), body:fd }).then(ok)
 export const joinProject    = id    => fetch(`${BASE}/projects/${id}/join`,   { method:'POST', headers:hdrs() }).then(ok)
+export const setCollaboratorRole = (pid,uid,role) => fetch(`${BASE}/projects/${pid}/collaborators/${uid}/role`, { method:'PATCH', headers:hdrs(), body:JSON.stringify({ role }) }).then(ok)
 export const respondRequest = (id,uid,action) => fetch(`${BASE}/projects/${id}/accept`, { method:'POST', headers:hdrs(), body:JSON.stringify({ user_id:uid, action }) }).then(ok)
 
 // ── Tasks ─────────────────────────────────────────────────────────────────────

@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react'
 import { useParams, useNavigate, Link } from 'react-router-dom'
-import { getProject, joinProject, respondRequest, getProjectProgress, getGithubStats } from '../services/api'
+import { getProject, joinProject, respondRequest, getProjectProgress, getGithubStats, setCollaboratorRole } from '../services/api'
 import { getSocket, joinProjectRoom, leaveProjectRoom } from '../services/socket'
 import { useAuth } from '../services/AuthContext'
 import Spinner from '../components/Spinner'
@@ -51,6 +51,12 @@ export default function ProjectDetail() {
   async function handleRespond(uid, action) {
     setErr(''); setMsg('')
     try { await respondRequest(id, uid, action); setMsg(`Request ${action}ed.`); load() }
+    catch(e) { setErr(e.message) }
+  }
+
+  async function handleSetRole(uid, role) {
+    setErr(''); setMsg('')
+    try { await setCollaboratorRole(id, uid, role); setMsg(`Role updated to ${role}.`); load() }
     catch(e) { setErr(e.message) }
   }
 
@@ -169,10 +175,23 @@ export default function ProjectDetail() {
 
               {/* Accepted collaborators */}
               {project.collaborators?.length>0 && (
-                <Section title={`Collaborators (${project.collaborators.length})`}>
+                <Section title={`Team Members (${project.collaborators.length})`}>
                   {project.collaborators.map(c=>(
                     <MemberRow key={c.id} c={c}
-                      extra={<Badge color="success">Accepted{c.github_added?' · GitHub ✓':''}</Badge>}/>
+                      extra={
+                        <div style={{display:'flex',gap:6,alignItems:'center',marginLeft:'auto',flexWrap:'wrap'}}>
+                          <Badge color={c.role==='Lead'?'warning':'success'}>
+                            {c.role==='Lead'?'⭐ Lead':'Collaborator'}{c.github_added?' · GitHub ✓':''}
+                          </Badge>
+                          {isOwner && (
+                            c.role==='Lead'
+                              ? <Button variant="secondary" style={{padding:'4px 10px',fontSize:11}}
+                                  onClick={()=>handleSetRole(c.user_id,'Collaborator')}>Remove Lead</Button>
+                              : <Button variant="secondary" style={{padding:'4px 10px',fontSize:11}}
+                                  onClick={()=>handleSetRole(c.user_id,'Lead')}>⭐ Make Lead</Button>
+                          )}
+                        </div>
+                      }/>
                   ))}
                 </Section>
               )}

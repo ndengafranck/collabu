@@ -42,13 +42,15 @@ export default function TaskBoard() {
   useEffect(() => { load() }, [id])
 
   const isOwner   = project?.owner_id === user?.id
+  const myCollab  = project?.collaborators?.find(c => c.user_id === user?.id)
+  const isLead    = isOwner || myCollab?.role === 'Lead'
   const colKey    = col => col.toLowerCase().replace(/\s+/g, '_')
   const tasksByCol= col => tasks.filter(t => t.status === colKey(col)).sort((a,b)=>a.position-b.position)
 
   // ── Drag & drop ────────────────────────────────────────────────────────────
   function onDragStart(e, task) {
-    // Collaborators can only drag their own assigned tasks
-    if (!isOwner && task.assignee_id !== user?.id) {
+    // Leads can drag any task; plain collaborators only drag their assigned tasks
+    if (!isLead && task.assignee_id !== user?.id) {
       e.preventDefault(); return
     }
     dragRef.current = task
@@ -97,7 +99,7 @@ export default function TaskBoard() {
         </div>
 
         <div style={{display:'flex', gap:8, alignItems:'center'}}>
-          {isOwner && (
+          {isLead && (
             <Button style={{fontSize:13,padding:'7px 14px'}} onClick={()=>setCreating(colKey(columns[0]||'todo'))}>
               + Add Task
             </Button>
@@ -114,8 +116,8 @@ export default function TaskBoard() {
           <KanbanColumn
             key={col} col={col} colKey={colKey(col)}
             tasks={tasksByCol(col)}
-            isOwner={isOwner} userId={user?.id}
-            onAddTask={isOwner ? ()=>setCreating(colKey(col)) : null}
+            isOwner={isOwner} isLead={isLead} userId={user?.id}
+            onAddTask={isLead ? ()=>setCreating(colKey(col)) : null}
             onSelectTask={setSelected}
             onDragStart={onDragStart} onDragEnd={onDragEnd}
             onDrop={e=>onDrop(e,col)} onDragOver={onDragOver}
@@ -124,7 +126,7 @@ export default function TaskBoard() {
       </div>
 
       {/* ── Create task modal (owner only) ── */}
-      {creating && isOwner && (
+      {creating && isLead && (
         <CreateTaskModal
           projectId={id} initialStatus={creating} columns={columns} colKey={colKey}
           members={members}
@@ -137,7 +139,7 @@ export default function TaskBoard() {
       {selected && (
         <TaskDetailModal
           task={selected} projectId={id}
-          isOwner={isOwner} userId={user?.id}
+          isOwner={isOwner} isLead={isLead} userId={user?.id}
           members={members}
           onClose={()=>setSelected(null)}
           onUpdated={t=>{ setTasks(prev=>prev.map(x=>x.id===t.id?t:x)); setSelected(t) }}
@@ -149,7 +151,7 @@ export default function TaskBoard() {
 }
 
 // ── Kanban Column ─────────────────────────────────────────────────────────────
-function KanbanColumn({ col, tasks, isOwner, userId, onAddTask, onSelectTask,
+function KanbanColumn({ col, tasks, isOwner, isLead, userId, onAddTask, onSelectTask,
                         onDragStart, onDragEnd, onDrop, onDragOver }) {
   const [over, setOver] = useState(false)
   return (
@@ -160,7 +162,7 @@ function KanbanColumn({ col, tasks, isOwner, userId, onAddTask, onSelectTask,
           <span style={{ background:'var(--bg-elevated)', color:'var(--txt3)', fontSize:11,
             fontWeight:700, padding:'1px 7px', borderRadius:10 }}>{tasks.length}</span>
         </div>
-        {isOwner && onAddTask && (
+        {isLead && onAddTask && (
           <button onClick={onAddTask} style={{ background:'none', border:'1px solid var(--border)',
             color:'var(--txt2)', borderRadius:5, padding:'2px 9px', fontSize:16, cursor:'pointer' }}>+</button>
         )}
@@ -178,7 +180,7 @@ function KanbanColumn({ col, tasks, isOwner, userId, onAddTask, onSelectTask,
         }}
       >
         {tasks.map(t => (
-          <TaskCard key={t.id} task={t} isOwner={isOwner} userId={userId}
+          <TaskCard key={t.id} task={t} isOwner={isOwner} isLead={isLead} userId={userId}
             onClick={()=>onSelectTask(t)}
             onDragStart={e=>onDragStart(e,t)}
             onDragEnd={onDragEnd}
@@ -196,8 +198,8 @@ function KanbanColumn({ col, tasks, isOwner, userId, onAddTask, onSelectTask,
 }
 
 // ── Task Card ─────────────────────────────────────────────────────────────────
-function TaskCard({ task, isOwner, userId, onClick, onDragStart, onDragEnd }) {
-  const canDrag = isOwner || task.assignee_id === userId
+function TaskCard({ task, isOwner, isLead, userId, onClick, onDragStart, onDragEnd }) {
+  const canDrag = isLead || task.assignee_id === userId
   return (
     <div
       draggable={canDrag}
@@ -326,7 +328,7 @@ function CreateTaskModal({ projectId, initialStatus, columns, colKey, members, o
 }
 
 // ── Task Detail Modal ──────────────────────────────────────────────────────────
-function TaskDetailModal({ task, projectId, isOwner, userId, members, onClose, onUpdated, onDeleted }) {
+function TaskDetailModal({ task, projectId, isOwner, isLead, userId, members, onClose, onUpdated, onDeleted }) {
   const [comments,  setComments]  = useState([])
   const [loadingC,  setLoadingC]  = useState(true)
   const [newBody,   setNewBody]   = useState('')
@@ -418,7 +420,7 @@ function TaskDetailModal({ task, projectId, isOwner, userId, members, onClose, o
       </div>
 
       {/* Owner actions */}
-      {isOwner && (
+      {(isOwner || (isLead && task.created_by === userId)) && (
         <div style={{marginBottom:14}}>
           <Button variant="danger" style={{fontSize:12,padding:'5px 12px'}} onClick={delTask}>
             🗑 Delete Task

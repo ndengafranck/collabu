@@ -17,13 +17,15 @@ def get_project_and_check(pid, uid, owner_only=False):
     if not p:
         return None, ({"error": "Project not found."}, 404)
     is_owner = p.owner_id == uid
-    is_member = is_owner or bool(
-        Collaboration.query.filter_by(project_id=pid, user_id=uid, status="accepted").first()
-    )
+    collab = Collaboration.query.filter_by(project_id=pid, user_id=uid, status="accepted").first()
+    is_member = is_owner or bool(collab)
+    is_lead = is_owner or (collab and collab.role == "Lead")
     if owner_only and not is_owner:
         return None, ({"error": "Only the project owner can do this."}, 403)
     if not is_member:
         return None, ({"error": "Not a project member."}, 403)
+    p._is_owner = is_owner
+    p._is_lead  = is_lead
     return p, None
 
 # ── GET tasks ─────────────────────────────────────────────────────────────────
@@ -34,7 +36,12 @@ def get_tasks(pid):
     uid = int(get_jwt_identity())
     p, err = get_project_and_check(pid, uid)
     if err: return jsonify(err[0]), err[1]
-    tasks = Task.query.filter_by(project_id=pid).order_by(Task.status, Task.position).all()
+    all_tasks = Task.query.filter_by(project_id=pid).order_by(Task.status, Task.position).all()
+    # Owners and Leads see all tasks; regular collaborators only see tasks they created or are assigned
+    if p._is_lead:
+        tasks = all_tasks
+    else:
+        tasks = [t for t in all_tasks if t.created_by == uid or t.assignee_id == uid]
     return jsonify({"tasks": [t.to_dict() for t in tasks]}), 200
 
 # ── CREATE task — owner only ──────────────────────────────────────────────────
@@ -43,8 +50,10 @@ def get_tasks(pid):
 @jwt_required()
 def create_task(pid):
     uid = int(get_jwt_identity())
-    p, err = get_project_and_check(pid, uid, owner_only=True)
+    p, err = get_project_and_check(pid, uid)
     if err: return jsonify(err[0]), err[1]
+    if not p._is_lead:
+        return jsonify({"error": "Only the project owner or leads can create tasks."}), 403
     d     = request.get_json()
     title = (d.get("title") or "").strip()
     if not title: return jsonify({"error": "Title is required."}), 400
@@ -99,12 +108,13 @@ def update_task(pid, tid):
     if err: return jsonify(err[0]), err[1]
     task = Task.query.filter_by(id=tid, project_id=pid).first_or_404()
 
-    # Non-owners can only update status of their own assigned tasks
+    # Leads can edit any task, plain collaborators only update status of their assigned tasks
     is_owner = p.owner_id == uid
+    is_lead  = p._is_lead
     d = request.get_json()
 
-    if not is_owner:
-        # collaborators can only move tasks assigned to them
+    if not is_lead:
+        # plain collaborators can only move tasks assigned to them
         if task.assignee_id != uid:
             return jsonify({"error": "You can only update tasks assigned to you."}), 403
         allowed = {"status", "position"}
@@ -116,7 +126,7 @@ def update_task(pid, tid):
     if "priority"      in d: task.priority      = d["priority"]
     if "required_skill"in d: task.required_skill= d["required_skill"]
     if "position"      in d: task.position      = d["position"]
-    if "assignee_id"   in d and is_owner:
+    if "assignee_id"   in d and is_lead:
         aid = d["assignee_id"]
         if aid:
             valid = (aid == p.owner_id) or bool(
@@ -135,7 +145,7 @@ def update_task(pid, tid):
                 link=f"/projects/{pid}/board",
                 actor_id=uid,
             )
-    if "due_date" in d and is_owner:
+    if "due_date" in d and is_lead:
         from datetime import datetime
         try: task.due_date = datetime.fromisoformat(d["due_date"]) if d["due_date"] else None
         except: pass

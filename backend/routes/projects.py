@@ -199,3 +199,24 @@ def accept_request(pid):
         )
         return jsonify({"message": "Rejected.", "collaboration": collab.to_dict()}), 200
     return jsonify({"error": "Invalid action."}), 400
+
+
+# ── Promote / demote collaborator to lead ────────────────────────────────────
+
+@projects_bp.route("/projects/<int:pid>/collaborators/<int:uid>/role", methods=["PATCH"])
+@jwt_required()
+def set_collaborator_role(pid, uid):
+    owner_id = int(get_jwt_identity())
+    p = Project.query.get_or_404(pid)
+    if p.owner_id != owner_id:
+        return jsonify({"error": "Only the project owner can change roles."}), 403
+    collab = Collaboration.query.filter_by(project_id=pid, user_id=uid, status="accepted").first()
+    if not collab:
+        return jsonify({"error": "Accepted collaborator not found."}), 404
+    d = request.get_json()
+    role = d.get("role", "Collaborator")
+    if role not in ("Lead", "Collaborator"):
+        return jsonify({"error": "Role must be Lead or Collaborator."}), 400
+    collab.role = role
+    db.session.commit()
+    return jsonify({"collaboration": collab.to_dict()}), 200

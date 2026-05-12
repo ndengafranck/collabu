@@ -34,7 +34,7 @@ function AppRoutes() {
   const { user } = useAuth()
   return (
     <>
-      {user && <Navbar />}
+      <Navbar />
       <Routes>
         <Route path="/"                     element={<Navigate to={user ? '/feed' : '/login'} replace />} />
         <Route path="/login"                element={<Public><Login /></Public>} />
@@ -49,7 +49,7 @@ function AppRoutes() {
         <Route path="/projects/:id/gallery" element={<Private><Gallery /></Private>} />
         <Route path="/profile"              element={<Private><Profile /></Private>} />
         <Route path="/github/callback"      element={<Private><GithubCallback /></Private>} />
-        <Route path="/getting-started"      element={<Private><GettingStarted /></Private>} />
+        <Route path="/getting-started"      element={<GettingStarted />} />
         <Route path="*"                     element={<Navigate to="/" replace />} />
       </Routes>
     </>

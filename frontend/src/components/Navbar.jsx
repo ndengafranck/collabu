@@ -64,9 +64,10 @@ export default function Navbar() {
           </button>
 
           {/* Notifications bell */}
-          <NotificationBell />
+          {user && <NotificationBell />}
 
           {/* Profile chip — hides name on mobile via CSS */}
+          {user ? (
           <Link to="/profile" style={profileChipStyle} onClick={close}>
             <Avatar url={user?.avatar_url} name={user?.name} size={26} />
             <span className="nav-profile-name" style={{
@@ -76,9 +77,15 @@ export default function Navbar() {
               {user?.name}
             </span>
           </Link>
+          ) : (
+          <div style={{display:'flex',gap:6}}>
+            <Link to="/login" style={{fontSize:13,padding:'6px 12px',borderRadius:7,border:'1px solid var(--border)',color:'var(--txt2)',textDecoration:'none',background:'var(--bg-elevated)'}}>Login</Link>
+            <Link to="/register" style={{fontSize:13,padding:'6px 12px',borderRadius:7,border:'1px solid var(--accent)',color:'var(--accent)',textDecoration:'none',background:'transparent',fontWeight:600}}>Sign Up</Link>
+          </div>
+          )}
 
           {/* Logout button — hidden on mobile via CSS */}
-          <button className="nav-logout-btn"
+          {user && <button className="nav-logout-btn"
             onClick={() => { logout(); navigate('/login') }}
             style={{
               display: 'flex', alignItems: 'center', gap: 6,
@@ -86,7 +93,7 @@ export default function Navbar() {
               color: 'var(--txt3)', fontSize: 13, border: '1px solid var(--border)', cursor: 'pointer',
             }}>
             <IconLogout size={14} color="var(--txt3)" /> {t('Logout')}
-          </button>
+          </button>}
 
           {/* Hamburger — shown only on mobile via CSS */}
           <button
