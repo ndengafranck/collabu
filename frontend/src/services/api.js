@@ -91,3 +91,10 @@ export const clearNotifications= ()         => fetch(`${BASE}/notifications`,   
 export const getVapidPublicKey = ()    => fetch(`${BASE}/push/vapid-public-key`, { headers: hdrs() }).then(ok)
 export const subscribePush     = (sub) => fetch(`${BASE}/push/subscribe`,   { method: 'POST',   headers: hdrs(), body: JSON.stringify({ subscription: sub }) }).then(ok)
 export const unsubscribePush   = (ep)  => fetch(`${BASE}/push/unsubscribe`, { method: 'DELETE', headers: hdrs(), body: JSON.stringify({ endpoint: ep }) }).then(ok)
+
+// ── Invites ────────────────────────────────────────────────────────────────────
+export const createInvite      = (pid, opts={})  => fetch(`${BASE}/projects/${pid}/invites`, { method:'POST',  headers:hdrs(), body:JSON.stringify(opts) }).then(ok)
+export const listInvites       = pid             => fetch(`${BASE}/projects/${pid}/invites`, { headers:hdrs() }).then(ok)
+export const deactivateInvite  = iid             => fetch(`${BASE}/invites/${iid}/deactivate`, { method:'PATCH', headers:hdrs() }).then(ok)
+export const previewInvite     = token           => fetch(`${BASE}/invites/${token}/preview`, { headers:hdrs() }).then(ok)
+export const acceptInvite      = token           => fetch(`${BASE}/invites/${token}/accept`,  { method:'POST',  headers:hdrs() }).then(ok)

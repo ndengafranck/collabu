@@ -68,7 +68,16 @@ def upload_cover(pid):
 @jwt_required()
 def get_projects():
     projects = Project.query.order_by(Project.created_at.desc()).all()
-    return jsonify({"projects": [p.to_dict() for p in projects]}), 200
+    result = []
+    for p in projects:
+        d = p.to_dict()
+        # Lightweight collaborator_ids list so frontend joined-filter works
+        d["collaborators"] = [
+            {"user_id": c.user_id, "status": c.status, "role": c.role}
+            for c in p.collaborations if c.status == "accepted"
+        ]
+        result.append(d)
+    return jsonify({"projects": result}), 200
 
 @projects_bp.route("/projects/<int:pid>", methods=["GET"])
 @jwt_required()

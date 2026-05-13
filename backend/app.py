@@ -25,6 +25,8 @@ from routes.posts        import posts_bp
 from routes.global_posts import gp_bp
 from routes.notifications import notifications_bp
 from routes.push          import push_bp
+from routes.invites       import invites_bp
+from routes.admin         import admin_bp
 
 import cloudinary
 migrate = Migrate()
@@ -90,10 +92,12 @@ def create_app():
     )
     
 
-    # ── CORS — reads allowed origin from env ─────────────────────────────────
+    # ── CORS — reads allowed origins from env (main frontend + admin panel) ────
     frontend_url = os.getenv("FRONTEND_URL", "http://localhost:5173").rstrip("/")
+    admin_url    = os.getenv("ADMIN_URL",    "http://localhost:5174").rstrip("/")
+    allowed_origins = [frontend_url, admin_url]
     CORS(app,
-         origins=[frontend_url],
+         origins=allowed_origins,
          supports_credentials=True,
          allow_headers=["Content-Type", "Authorization"],
          methods=["GET","POST","PATCH","PUT","DELETE","OPTIONS"])
@@ -106,7 +110,7 @@ def create_app():
 
     # ── Blueprints ────────────────────────────────────────────────────────────
     for bp in [auth_bp, projects_bp, users_bp, tasks_bp,
-               github_bp, chat_bp, posts_bp, gp_bp, notifications_bp, push_bp]:
+               github_bp, chat_bp, posts_bp, gp_bp, notifications_bp, push_bp, invites_bp, admin_bp]:
         app.register_blueprint(bp, url_prefix="/api")
 
     # ── Protected static file serving ─────────────────────────────────────────

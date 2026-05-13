@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useNavigate, useLocation } from 'react-router-dom'
 import { login } from '../services/api'
 import { useAuth } from '../services/AuthContext'
 import { FormGroup, Input, Button, Alert } from '../components/FormComponents'
@@ -8,6 +8,8 @@ import { IconHexLogo } from '../components/Icons'
 export default function Login() {
   const { storeAuth } = useAuth()
   const navigate      = useNavigate()
+  const location      = useLocation()
+  const nextPath      = new URLSearchParams(location.search).get('next') || '/dashboard'
   const [f, setF]     = useState({ email:'', password:'' })
   const [err, setErr] = useState('')
   const [busy, setBusy] = useState(false)
@@ -16,7 +18,7 @@ export default function Login() {
 
   async function submit(e) {
     e.preventDefault(); setErr(''); setBusy(true)
-    try { const d = await login(f); storeAuth(d.token, d.refresh_token, d.user); navigate('/dashboard') }
+    try { const d = await login(f); storeAuth(d.token, d.refresh_token, d.user); navigate(nextPath) }
     catch(e) { setErr(e.message) } finally { setBusy(false) }
   }
 

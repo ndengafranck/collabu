@@ -18,6 +18,7 @@ import GlobalFeed      from './pages/GlobalFeed'
 import Profile         from './pages/Profile'
 import GithubCallback  from './pages/GithubCallback'
 import GettingStarted  from './pages/GettingStarted'
+import InviteAccept    from './pages/InviteAccept'
 
 function Private({ children }) {
   const { user, loading } = useAuth()
@@ -50,6 +51,7 @@ function AppRoutes() {
         <Route path="/profile"              element={<Private><Profile /></Private>} />
         <Route path="/github/callback"      element={<Private><GithubCallback /></Private>} />
         <Route path="/getting-started"      element={<GettingStarted />} />
+        <Route path="/invite/:token"          element={<InviteAccept />} />
         <Route path="*"                     element={<Navigate to="/" replace />} />
       </Routes>
     </>

@@ -293,3 +293,20 @@ input, textarea, select {
 @media (max-width: 360px) {
   .stat-label { display: none; }
 }
+
+/* ── Project collaborators — mobile responsive ───────────────────────────── */
+.member-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+@media (max-width: 480px) {
+  .project-action-btns { gap: 6px !important; }
+  .project-action-btns button,
+  .project-action-btns a { font-size: 12px !important; padding: 6px 10px !important; }
+
+  /* Share modal full-width on small screens */
+  .share-modal-inner { max-width: 100% !important; border-radius: 12px !important; }
+}

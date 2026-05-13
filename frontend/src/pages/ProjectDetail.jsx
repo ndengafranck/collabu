@@ -6,7 +6,8 @@ import { useAuth } from '../services/AuthContext'
 import Spinner from '../components/Spinner'
 import { Button, Alert, Badge, Avatar } from '../components/FormComponents'
 import SkillBadges from '../components/SkillBadges'
-import { IconChat, IconPost, IconGallery, IconStarFilled, IconFork, IconBug } from '../components/Icons'
+import { IconChat, IconPost, IconGallery, IconStarFilled, IconFork, IconBug, IconLink } from '../components/Icons'
+import ShareModal from '../components/ShareModal'
 
 export default function ProjectDetail() {
   const { id }    = useParams()
@@ -20,6 +21,7 @@ export default function ProjectDetail() {
   const [err,  setErr]  = useState('')
   const [joining, setJoining] = useState(false)
   const [tab, setTab]   = useState('overview') // overview | contributors
+  const [showShare, setShowShare] = useState(false)
 
   const load = () => {
     setLoading(true)
@@ -113,6 +115,11 @@ export default function ProjectDetail() {
                 </Button>
               </>
             )}
+            {(isOwner || myCollab?.role==='Lead') && (
+              <Button variant="secondary" style={{fontSize:13,padding:'7px 14px'}} onClick={()=>setShowShare(true)}>
+                <IconLink size={14} style={{marginRight:5}}/>Share
+              </Button>
+            )}
             {isOwner && <Button variant="ghost" onClick={()=>{}}>Edit</Button>}
           </div>
         </div>
@@ -179,7 +186,7 @@ export default function ProjectDetail() {
                   {project.collaborators.map(c=>(
                     <MemberRow key={c.id} c={c}
                       extra={
-                        <div style={{display:'flex',gap:6,alignItems:'center',marginLeft:'auto',flexWrap:'wrap'}}>
+                        <div style={{display:'flex',gap:6,alignItems:'center',flexWrap:'wrap'}}>
                           <Badge color={c.role==='Lead'?'warning':'success'}>
                             {c.role==='Lead'?'⭐ Lead':'Collaborator'}{c.github_added?' · GitHub ✓':''}
                           </Badge>
@@ -202,7 +209,7 @@ export default function ProjectDetail() {
                   {project.pending_requests.map(c=>(
                     <MemberRow key={c.id} c={c}
                       extra={
-                        <div style={{display:'flex',gap:6,marginLeft:'auto'}}>
+                        <div style={{display:'flex',gap:6,flexWrap:'wrap'}}>
                           {c.matched_skills && (
                             <span style={{fontSize:11,color:'var(--success)',marginRight:4}}>
                               ✓ {c.matched_skills}
@@ -259,6 +266,13 @@ export default function ProjectDetail() {
         )}
 
         {tab==='contributors' && <ContributorsTab ghStats={ghStats}/>}
+         {showShare && (
+        <ShareModal
+        projectId={project.id}
+        projectTitle={project.title}
+        onClose={()=>setShowShare(false)}
+      />
+      )}
       </div>
     </div>
   )
@@ -275,14 +289,41 @@ function Section({ title, children }) {
 
 function MemberRow({ c, extra }) {
   return (
-    <div style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:'1px solid var(--border)'}}>
-      <Avatar url={c.user?.avatar_url} name={c.user?.name||'?'} size={34}/>
-      <div style={{flex:1,minWidth:0}}>
-        <div style={{fontSize:14,fontWeight:600,color:'var(--txt1)'}}>{c.user?.name}</div>
-        <div style={{fontSize:11,color:'var(--txt3)',marginTop:1}}>{c.user?.email}</div>
-        {c.user?.skills && <SkillBadges skills={c.user.skills} highlight={c.matched_skills?.split(',')||[]}/>}
+    <div style={{
+      display:'flex', flexDirection:'column', gap:8,
+      padding:'12px 0', borderBottom:'1px solid var(--border)',
+    }}>
+      {/* Top row: avatar + name + email */}
+      <div style={{display:'flex', alignItems:'center', gap:10, minWidth:0}}>
+        <Avatar url={c.user?.avatar_url} name={c.user?.name||'?'} size={36}/>
+        <div style={{flex:1, minWidth:0}}>
+          <div style={{fontSize:14, fontWeight:600, color:'var(--txt1)',
+            overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+            {c.user?.name}
+          </div>
+          <div style={{fontSize:11, color:'var(--txt3)', marginTop:1,
+            overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap'}}>
+            {c.user?.email}
+          </div>
+        </div>
       </div>
-      {extra}
+
+      {/* Skills row */}
+      {c.user?.skills && (
+        <div style={{paddingLeft:46}}>
+          <SkillBadges skills={c.user.skills} highlight={c.matched_skills?.split(',')||[]}/>
+        </div>
+      )}
+
+      {/* Actions row — badge + buttons, always full-width on mobile */}
+      {extra && (
+        <div style={{
+          paddingLeft:46,
+          display:'flex', alignItems:'center', gap:8, flexWrap:'wrap',
+        }}>
+          {extra}
+        </div>
+      )}
     </div>
   )
 }
@@ -356,6 +397,9 @@ function ContributorsTab({ ghStats }) {
           </div>
         </div>
       )}
+      
+   
     </div>
+    
   )
 }

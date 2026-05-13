@@ -16,6 +16,8 @@ class User(db.Model):
     github_pat       = db.Column(db.Text, default="")   # user's own Personal Access Token
     theme            = db.Column(db.String(20), default="dark")
     language         = db.Column(db.String(10), default="en")
+    is_admin         = db.Column(db.Boolean, default=False)
+    is_banned         = db.Column(db.Boolean, default=False)
     created_at       = db.Column(db.DateTime, default=datetime.utcnow)
 
     projects_owned  = db.relationship("Project", backref="owner", lazy=True)
@@ -35,6 +37,8 @@ class User(db.Model):
             "has_github_pat":  bool(self.github_pat),  # never expose the raw PAT
             "theme":           self.theme,
             "language":        self.language,
+            "is_admin":        self.is_admin,
+            "is_banned":        self.is_banned,
             "created_at":      self.created_at.isoformat(),
         }
         return d

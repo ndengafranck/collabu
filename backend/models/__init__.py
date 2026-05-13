@@ -12,3 +12,4 @@ from models.post          import Post, PostFile, PostLike, PostComment
 from models.notification  import Notification
 
 from models.push_subscription import PushSubscription
+from models.invite import ProjectInvite
